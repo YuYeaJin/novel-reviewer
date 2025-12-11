@@ -1,5 +1,8 @@
 # 파이프라인 전체 테스트용 파일
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from pipeline import run_pipeline
 
 if __name__ == "__main__":
