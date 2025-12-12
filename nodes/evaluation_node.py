@@ -3,14 +3,74 @@
 개연성 - 스토리가 이어지는 데 캐릭터의 선택이나 사건 발생이 자연스러운지 평가
 독창성 - 시중에 널린 스토리, 키워드 뿐만 아니라 이 원고만의 차별점이 있는지 평가'''
 
-def evaluate_story(text: str, genre_info: dict | None = None) -> dict:
+from openai import OpenAI
+from typing import Dict
+
+client = OpenAI()
+
+
+def evaluate_story(text: str, genre_info: Dict) -> Dict:
     """
-    시장성, 개연성, 독창성 평가를 수행.
+    소설 평가 노드
+    입력:
+      - text: 원문
+      - genre_info: genre_node 결과(dict)
+    출력:
+      - 평가 점수 + 코멘트(dict)
     """
-    result = {
-        "marketability_score": None,
-        "coherence_score": None,
-        "originality_score": None,
-        "comments": [],
-    }
-    return result
+
+    prompt = f"""
+
+    당신은 웹소설 전문 평가 AI입니다.
+    아래의 '평가 기준'을 반드시 따르세요.
+
+    [평가 기준]
+
+    1. 시장성
+    - 현재 웹소설 시장에서 인기 있는 장르, 클리셰, 키워드 흐름을 기준으로 평가
+    - 장르 적합성, 대중성, 플랫폼 친화성을 중심으로 판단
+    - 시장성 평가는 반드시 위 [장르 분석] 결과로 판단된 장르를 기준으로, 해당 장르 내부 시장에서의 경쟁력을 평가할 것
+    - 개인 취향이나 문학적 완성도는 고려하지 말 것
+
+    2. 개연성
+    - 스토리 전개 과정에서 캐릭터의 선택과 사건 발생이 논리적으로 이어지는지 평가
+    - 설정 붕괴, 동기 부족, 결과의 비약 여부를 중심으로 판단
+    - 장르 클리셰 자체는 감점 요소가 아님
+
+    3. 독창성
+    - 시중에 흔한 스토리, 설정, 키워드와 비교했을 때의 차별성을 기준으로 평가
+    - 완전히 새로운 소재가 아니어도, 조합·변주·관점의 차이를 인정
+    - 단순한 인기 요소 나열은 독창성으로 인정하지 말 것
+
+    ---
+
+
+    [장르 분석]
+    {genre_info}
+
+    [소설 원문]
+    {text}
+
+    위 내용을 바탕으로 소설을 평가해 주세요.
+
+    평가 항목:
+    1. 시장성 (0~100점)
+    2. 개연성 (0~100점)
+    3. 독창성 (0~100점)
+
+    각 항목마다:
+    - 점수
+    - 간단한 이유(2~3문장)
+
+    마지막에 전체 종합 총평을 3~4문장으로 작성해 주세요.
+
+    결과는 반드시 JSON 형식으로만 반환하세요.
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+
+    return response.choices[0].message.content
