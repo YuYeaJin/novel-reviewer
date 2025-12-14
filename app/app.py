@@ -25,6 +25,9 @@ from nodes.character_node import analyze_characters
 from nodes.character_card_node import extract_character_cards
 from nodes.style_node import analyze_style
 
+# langgraph
+from pipeline.langgraph_pipeline import run_langgraph_pipeline
+
 def _try_render_json(value):
     """LLM 노드가 JSON 문자열로 반환하는 경우가 많아, 가능하면 JSON으로 예쁘게 보여준다."""
     if value is None:
@@ -155,6 +158,29 @@ if st.session_state.summary_result:
 else:
     st.info("요약을 먼저 실행해주세요.")
     st.stop()
+
+# ==================================================
+# LangGraph
+# ==================================================
+
+st.header("LangGraph 전체 분석")
+if st.button("LangGraph로 한번에 분석"):
+    with st.spinner("LangGraph 파이프라인 실행 중..."):
+        result = run_langgraph_pipeline(st.session_state.text)
+        
+        # 결과 세션에 저장
+        st.session_state.summary_result = result.get("summary")
+        st.session_state.genre_result = result.get("genre")
+        st.session_state.style_result = result.get("style")
+        st.session_state.evaluation_result = result.get("evaluation")
+        st.session_state.character_result = result.get("characters")
+        st.session_state.character_cards_result = result.get("character_cards")
+        
+        # 에러 표시
+        if result.get("errors"):
+            st.error(f"일부 노드에서 오류 발생: {result['errors']}")
+        else:
+            st.success("모든 분석 완료!")
 
 
 # ==================================================
