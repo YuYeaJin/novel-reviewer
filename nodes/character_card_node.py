@@ -1,10 +1,7 @@
 # 원고내 등장하는 주요 캐릭터들의 설정을 뽑아내는 노드
 
-from openai import OpenAI
 from typing import List, Dict
-
-client = OpenAI()
-
+from utils.openai_client import get_client
 
 def extract_character_cards(text: str) -> List[Dict]:
     """
@@ -12,7 +9,7 @@ def extract_character_cards(text: str) -> List[Dict]:
     - 등장인물 식별
     - 각 캐릭터의 성격, 역할, 특징 정리
     """
-
+    client = get_client()
     prompt = f"""
 당신은 웹소설 캐릭터 카드 생성 전문 AI입니다.
 아래 소설 원문을 읽고, 주요 캐릭터들을 카드 형태로 정리하세요.

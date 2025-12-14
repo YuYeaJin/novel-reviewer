@@ -3,14 +3,13 @@
     2. 핵심 키워드 추출
         (문단별/편별 요약은 2차 버전에서 확장 예정)'''
 
-from openai import OpenAI
+
 from typing import Dict, List
 from utils.text_utils import split_paragraphs
+from utils.openai_client import get_client
 
-# OpenAI 클라이언트 준비 (API 키는 .env에서 자동 로드)
-client = OpenAI()
 
-def extract_keywords(text: str) -> List[str]:
+def extract_keywords(text: str, client) -> List[str]:
     """핵심 키워드 추출"""
     prompt = f"""
     다음 소설 텍스트에서 핵심 키워드 5~8개를 추출해 주세요.
@@ -29,28 +28,28 @@ def extract_keywords(text: str) -> List[str]:
     keywords = response.choices[0].message.content.strip()
     return [k.strip() for k in keywords.split(",")]
 
+# 개발 중은 주석
+# def summarize_paragraphs(paragraphs: List[str], client) -> List[str]:
+#     """문단별 요약"""
+#     summaries = []
 
-def summarize_paragraphs(paragraphs: List[str]) -> List[str]:
-    """문단별 요약"""
-    summaries = []
+#     for idx, para in enumerate(paragraphs, start=1):
+#         prompt = f"""
+#         다음 문단을 한두 문장으로 요약해 주세요.
 
-    for idx, para in enumerate(paragraphs, start=1):
-        prompt = f"""
-        다음 문단을 한두 문장으로 요약해 주세요.
+#         문단:
+#         {para}
+#         """
 
-        문단:
-        {para}
-        """
+#         response = client.chat.completions.create(
+#             model="gpt-4o-mini",
+#             messages=[{"role": "user", "content": prompt}],
+#             temperature=0.4,
+#         )
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
-        )
+#         summaries.append(response.choices[0].message.content.strip())
 
-        summaries.append(response.choices[0].message.content.strip())
-
-    return summaries
+#     return summaries
 
 
 def summarize_text(text: str) -> Dict:
@@ -61,6 +60,7 @@ def summarize_text(text: str) -> Dict:
     - 문단별 요약
     """
 
+    client = get_client()
     # 1. 전체 요약
     summary_prompt = f"""
     다음 소설을 5~7문장으로 요약해 주세요.
@@ -82,15 +82,16 @@ def summarize_text(text: str) -> Dict:
     paragraphs = split_paragraphs(text)
 
     # 3. 문단별 요약
-    paragraph_summaries = summarize_paragraphs(paragraphs)
+    # paragraph_summaries = summarize_paragraphs(paragraphs, client)
 
     # 4. 키워드 추출
-    keywords = extract_keywords(text)
+    keywords = extract_keywords(text, client)
 
     return {
         "full_summary": full_summary,
         "keywords": keywords,
-        "paragraph_summaries": paragraph_summaries,
+        # "paragraph_summaries": paragraph_summaries,
+        "paragraph_summaries" : []
     }
 
     ''' 아래 형식으로 반환될 예정

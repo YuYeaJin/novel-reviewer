@@ -1,18 +1,16 @@
 # 장르 분석 담당 노드(원고를 읽고 판타지, 로판, 현판 등 판단, 판단 기준이 된 키워드 추출)
 
-from openai import OpenAI
 from typing import Dict
-
-client = OpenAI()
-
+from utils.openai_client import get_client
 
 def analyze_genre(text: str, summary_result: Dict) -> Dict:
+
     """
     장르 분류 노드
     입력: summary_node 결과(dict)
     출력: 장르 분석 결과(dict)
     """
-
+    client = get_client()
     full_summary = summary_result.get("full_summary", "")
     keywords = summary_result.get("keywords", [])
 

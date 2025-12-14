@@ -1,10 +1,7 @@
 # 원고 문체 분석 담당 노드
 
-from openai import OpenAI
 from typing import Dict, List
-
-client = OpenAI()
-
+from utils.openai_client import get_client
 
 def analyze_style(text: str) -> Dict:
     """
@@ -13,7 +10,7 @@ def analyze_style(text: str) -> Dict:
     - 강점
     - 약점
     """
-
+    client = get_client()
     prompt = f"""
 당신은 웹소설 문체 분석 전문 AI입니다.
 아래 소설 원문을 읽고, 문체와 서술 스타일을 분석하세요.

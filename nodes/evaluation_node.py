@@ -3,11 +3,9 @@
 개연성 - 스토리가 이어지는 데 캐릭터의 선택이나 사건 발생이 자연스러운지 평가
 독창성 - 시중에 널린 스토리, 키워드 뿐만 아니라 이 원고만의 차별점이 있는지 평가'''
 
-from openai import OpenAI
+
 from typing import Dict
-
-client = OpenAI()
-
+from utils.openai_client import get_client
 
 def evaluate_story(text: str, genre_info: Dict) -> Dict:
     """
@@ -18,7 +16,8 @@ def evaluate_story(text: str, genre_info: Dict) -> Dict:
     출력:
       - 평가 점수 + 코멘트(dict)
     """
-
+    
+    client = get_client()
     prompt = f"""
 
     당신은 웹소설 전문 평가 AI입니다.

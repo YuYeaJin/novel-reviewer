@@ -1,10 +1,8 @@
 # 이야기가 진행되면서 캐릭터별 캐릭터의 특징이 변화 없는지 평가하는 노드
 
-from openai import OpenAI
+
 from typing import Dict
-
-client = OpenAI()
-
+from utils.openai_client import get_client
 
 def analyze_characters(text: str) -> Dict:
     """
@@ -13,7 +11,8 @@ def analyze_characters(text: str) -> Dict:
     - 행동과 동기의 연결성
     - 말투/행동 톤 유지
     """
-
+    
+    client = get_client()
     prompt = f"""
 당신은 웹소설 캐릭터 분석 전문 AI입니다.
 아래 기준에 따라 소설 속 주요 캐릭터의 '캐릭터성 유지 여부'를 평가하세요.
