@@ -67,7 +67,6 @@ def safe_node_wrapper(node_func):
 # -------------------------
 # 4. LangGraph용 노드 래퍼
 # -------------------------
-@safe_node_wrapper
 def summary_node(state: AnalysisState) -> AnalysisState:
     result = summarize_text(state["text"])
     # summary_node는 이미 dict를 반환하므로 파싱 불필요
@@ -77,7 +76,6 @@ def summary_node(state: AnalysisState) -> AnalysisState:
     }
 
 
-@safe_node_wrapper
 def genre_node(state: AnalysisState) -> AnalysisState:
     result = analyze_genre(state["text"], state["summary"])
     return {
@@ -86,16 +84,15 @@ def genre_node(state: AnalysisState) -> AnalysisState:
     }
 
 
-@safe_node_wrapper
 def style_node(state: AnalysisState) -> AnalysisState:
-    result = analyze_style(state["text"])
+    # summary 정보 전달
+    result = analyze_style(state["text"], state.get("summary"))
     return {
         **state,
         "style": parse_llm_response(result),
     }
 
 
-@safe_node_wrapper
 def evaluation_node(state: AnalysisState) -> AnalysisState:
     # evaluate_story는 (text, genre_info) 필요
     result = evaluate_story(state["text"], state["genre"])
@@ -105,7 +102,6 @@ def evaluation_node(state: AnalysisState) -> AnalysisState:
     }
 
 
-@safe_node_wrapper
 def character_node(state: AnalysisState) -> AnalysisState:
     result = analyze_characters(state["text"])
     return {
@@ -114,7 +110,6 @@ def character_node(state: AnalysisState) -> AnalysisState:
     }
 
 
-@safe_node_wrapper
 def character_card_node(state: AnalysisState) -> AnalysisState:
     result = extract_character_cards(state["text"])
     return {

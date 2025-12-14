@@ -28,6 +28,24 @@ from nodes.style_node import analyze_style
 # langgraph
 from pipeline.langgraph_pipeline import run_langgraph_pipeline
 
+# ==============================
+# 분석 실패했을 경우 보여줄 것
+# ==============================
+def render_analysis_section(title: str, result):
+    st.subheader(title)
+
+    if result is None:
+        st.info("분석에 실패했습니다.")
+        return False
+
+    if isinstance(result, dict) and result.get("parse_error"):
+        st.info("분석에 실패했습니다.")
+        return False
+
+    return True
+
+
+
 def _try_render_json(value):
     """LLM 노드가 JSON 문자열로 반환하는 경우가 많아, 가능하면 JSON으로 예쁘게 보여준다."""
     if value is None:
@@ -236,22 +254,19 @@ if st.button("선택한 분석 실행"):
 # ==================================================
 # 결과 렌더링 (세션에 저장된 값 기준)
 # ==================================================
-if st.session_state.genre_result is not None:
-    st.subheader("장르 분석")
+
+if render_analysis_section("장르 분석", st.session_state.genre_result):
     _try_render_json(st.session_state.genre_result)
 
-if st.session_state.evaluation_result is not None:
-    st.subheader("시장성 / 개연성 / 독창성")
+if render_analysis_section("시장성 / 개연성 / 독창성", st.session_state.evaluation_result):
     _try_render_json(st.session_state.evaluation_result)
 
-if st.session_state.character_result is not None:
-    st.subheader("캐릭터성 분석")
+if render_analysis_section("캐릭터성 분석", st.session_state.character_result):
     _try_render_json(st.session_state.character_result)
 
-if st.session_state.character_cards_result is not None:
-    st.subheader("캐릭터 카드")
+if render_analysis_section("캐릭터 카드", st.session_state.character_cards_result):
     _try_render_json(st.session_state.character_cards_result)
 
-if st.session_state.style_result is not None:
-    st.subheader("문체 분석")
+if render_analysis_section("문체 분석", st.session_state.style_result):
     _try_render_json(st.session_state.style_result)
+
