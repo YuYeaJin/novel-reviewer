@@ -3,11 +3,14 @@
 from typing import List, Dict
 from utils.openai_client import get_client
 
-def extract_character_cards(text: str) -> List[Dict]:
+def extract_character_cards(text: str) -> str:
     """
     주요 캐릭터 카드 추출 노드
     - 등장인물 식별
     - 각 캐릭터의 성격, 역할, 특징 정리
+    
+    Returns:
+        JSON 형식의 문자열 (List[Dict] 형태)
     """
     client = get_client()
     prompt = f"""
@@ -33,15 +36,22 @@ def extract_character_cards(text: str) -> List[Dict]:
 
 [출력 형식]
 
-아래 JSON 배열 형식으로만 반환하세요.
+반드시 아래 JSON 배열 형식으로만 반환하세요. 다른 설명이나 마크다운 코드 블록(```)은 포함하지 마세요.
 
 [
   {{
     "name": "캐릭터 이름",
-    "role": "주인공 / 조연 / 적대자 ",
+    "role": "주인공",
     "personality_keywords": ["성격 키워드 1", "성격 키워드 2", "성격 키워드 3"],
     "core_traits": "캐릭터의 핵심 특징을 요약한 2~3문장 설명",
-    "warning_point": "캐릭터성 유지 시 주의할 점 (없으면 빈 문자열)"
+    "warning_point": "캐릭터성 유지 시 주의할 점"
+  }},
+  {{
+    "name": "캐릭터 이름 2",
+    "role": "조연",
+    "personality_keywords": ["키워드1", "키워드2"],
+    "core_traits": "설명",
+    "warning_point": "주의점 (없으면 빈 문자열)"
   }}
 ]
 """

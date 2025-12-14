@@ -163,9 +163,9 @@ else:
 # LangGraph
 # ==================================================
 
-st.header("LangGraph 전체 분석")
-if st.button("LangGraph로 한번에 분석"):
-    with st.spinner("LangGraph 파이프라인 실행 중..."):
+st.header("AI 통합 분석")
+if st.button("모든 항목 자동 분석"):
+    with st.spinner("AI가 모든 항목 분석중이에요."):
         result = run_langgraph_pipeline(st.session_state.text)
         
         # 결과 세션에 저장

@@ -1,9 +1,9 @@
 # 원고 문체 분석 담당 노드
 
-from typing import Dict, List
+from typing import Dict
 from utils.openai_client import get_client
 
-def analyze_style(text: str) -> Dict:
+def analyze_style(text: str, summary_result: Dict = None) -> Dict:
     """
     문체 및 서술 스타일 분석 노드
     - 문체 특징
@@ -11,10 +11,18 @@ def analyze_style(text: str) -> Dict:
     - 약점
     """
     client = get_client()
+    
+    # summary 정보가 있으면 활용
+    context = ""
+    if summary_result:
+        keywords = summary_result.get("keywords", [])
+        if keywords:
+            context = f"\n[참고: 핵심 키워드]\n{', '.join(keywords)}\n"
+    
     prompt = f"""
 당신은 웹소설 문체 분석 전문 AI입니다.
 아래 소설 원문을 읽고, 문체와 서술 스타일을 분석하세요.
-
+{context}
 [분석 기준]
 
 1. 문체 특징
@@ -42,7 +50,7 @@ def analyze_style(text: str) -> Dict:
 
 [출력 형식]
 
-아래 JSON 형식으로만 반환하세요.
+반드시 아래 JSON 형식으로만 반환하세요. 다른 설명이나 마크다운 코드 블록(```)은 포함하지 마세요.
 
 {{
   "스타일": ["문체 특징 1", "문체 특징 2"],

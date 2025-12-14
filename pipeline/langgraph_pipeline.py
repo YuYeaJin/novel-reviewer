@@ -70,9 +70,10 @@ def safe_node_wrapper(node_func):
 @safe_node_wrapper
 def summary_node(state: AnalysisState) -> AnalysisState:
     result = summarize_text(state["text"])
+    # summary_node는 이미 dict를 반환하므로 파싱 불필요
     return {
         **state,
-        "summary": parse_llm_response(result),
+        "summary": result,
     }
 
 
@@ -209,7 +210,7 @@ def run_langgraph_pipeline(text: str) -> dict:
             "evaluation": None,
             "characters": None,
             "character_cards": None,
-            "errors": None,
+            "errors": [],
         }
     )
     return result
