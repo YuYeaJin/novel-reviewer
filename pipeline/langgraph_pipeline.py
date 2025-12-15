@@ -9,6 +9,7 @@ from nodes.style_node import analyze_style
 from nodes.evaluation_node import evaluate_story
 from nodes.character_node import analyze_characters
 from nodes.character_card_node import extract_character_cards
+from nodes.text_type_node import analyze_text_type
 
 
 # -------------------------
@@ -16,6 +17,7 @@ from nodes.character_card_node import extract_character_cards
 # -------------------------
 class AnalysisState(TypedDict):
     text: str
+    text_type: Optional[dict] 
     summary: Optional[dict]
     genre: Optional[dict]
     style: Optional[dict]
@@ -67,6 +69,13 @@ def safe_node_wrapper(node_func):
 # -------------------------
 # 4. LangGraph용 노드 래퍼
 # -------------------------
+def text_type_node(state: AnalysisState) -> AnalysisState:
+    result = analyze_text_type(state["text"])
+    return {
+        **state,
+        "text_type": result
+    }
+
 def summary_node(state: AnalysisState) -> AnalysisState:
     result = summarize_text(state["text"])
     # summary_node는 이미 dict를 반환하므로 파싱 불필요
@@ -149,6 +158,7 @@ def build_langgraph_pipeline():
     workflow = StateGraph(AnalysisState)
 
     # 노드 등록 (safe_node_wrapper는 이미 데코레이터로 적용됨)
+    workflow.add_node("text_type", text_type_node)
     workflow.add_node("summary", summary_node)
     workflow.add_node("genre", genre_node)
     workflow.add_node("style", style_node)
@@ -157,25 +167,28 @@ def build_langgraph_pipeline():
     workflow.add_node("character_cards", character_card_node)
 
     # 시작 지점
-    workflow.set_entry_point("summary")
+    workflow.set_entry_point("text_type")
 
-    # 흐름 정의
-    workflow.add_edge("summary", "genre")
-    
-    # 조건부 엣지: 장르 분석 후 신뢰도 체크
     workflow.add_conditional_edges(
-        "genre",
-        should_continue,
+        "text_type",
+        route_by_text_type,
         {
-            "continue": "style",
-            "low_confidence": "style",  # 추후 재분석 노드로 변경 가능
-        },
+            "novel": "summary",       # 소설 원문 → 전체 분석
+            "planning": "genre",      # 시나리오/플롯 → 기획 분석만
+            "unknown": "summary",     # 애매하면 소설로 간주
+        }
     )
-    
-    workflow.add_edge("style", "evaluation")
-    workflow.add_edge("evaluation", "characters")
+
+    # ===== 소설 원문 경로 =====
+    workflow.add_edge("summary", "genre")
+    workflow.add_edge("genre", "evaluation")
+    workflow.add_edge("evaluation", "style")
+    workflow.add_edge("style", "characters")
     workflow.add_edge("characters", "character_cards")
     workflow.add_edge("character_cards", END)
+
+    # ===== 시나리오/플롯 경로 =====
+    workflow.add_edge("evaluation", END)
 
     return workflow.compile()
 
