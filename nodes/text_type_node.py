@@ -1,8 +1,10 @@
 # 입력된 텍스트 및 첨부된 파일의 내용이 '소설'의 원문인지 '시놉시스/플롯'인지 구분하는 노드
 
 from typing import Dict
-from utils.openai_client import client
+from utils.openai_client import get_client
 import json
+
+client = get_client()
 
 def analyze_text_type(text: str) -> Dict:
     """

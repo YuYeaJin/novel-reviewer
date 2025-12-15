@@ -10,6 +10,8 @@ from nodes.evaluation_node import evaluate_story
 from nodes.character_node import analyze_characters
 from nodes.character_card_node import extract_character_cards
 from nodes.text_type_node import analyze_text_type
+from nodes.score_gate_node import score_gate_node, route_by_score
+from nodes.route_node import route_by_text_type
 
 
 # -------------------------
@@ -20,8 +22,9 @@ class AnalysisState(TypedDict):
     text_type: Optional[dict] 
     summary: Optional[dict]
     genre: Optional[dict]
-    style: Optional[dict]
     evaluation: Optional[dict]
+    score_gate: Optional[dict]
+    style: Optional[dict]
     characters: Optional[dict]
     character_cards: Optional[list]
     errors: Optional[list]
@@ -103,12 +106,21 @@ def style_node(state: AnalysisState) -> AnalysisState:
 
 
 def evaluation_node(state: AnalysisState) -> AnalysisState:
-    # evaluate_story는 (text, genre_info) 필요
-    result = evaluate_story(state["text"], state["genre"])
+    genre = state.get("genre")
+    if not genre:
+        return {
+            **state,
+            "evaluation": {
+                "error": "장르 분석 실패로 평가를 진행할 수 없습니다."
+            }
+        }
+
+    result = evaluate_story(state["text"], genre)
     return {
         **state,
         "evaluation": parse_llm_response(result),
     }
+
 
 
 def character_node(state: AnalysisState) -> AnalysisState:
@@ -127,74 +139,64 @@ def character_card_node(state: AnalysisState) -> AnalysisState:
     }
 
 
-# -------------------------
-# 5. 조건 함수
-# -------------------------
-def should_continue(state: AnalysisState) -> str:
-    """장르 신뢰도 기반 분기"""
-    genre_info = state.get("genre")
-    
-    if not genre_info:
-        return "continue"
-    
-    # dict에서 신뢰도 추출 시도
-    confidence = 0.0
-    if isinstance(genre_info, dict):
-        # 다양한 키 이름 시도
-        confidence = genre_info.get("장르_분류_신뢰도") or \
-                    genre_info.get("confidence") or \
-                    genre_info.get("장르 분류 신뢰도") or 1.0
-    
-    # 신뢰도 낮으면 재분석 경로 표시 (현재는 같은 경로로 진행)
-    if confidence < 0.5:
-        return "low_confidence"
-    return "continue"
-
 
 # -------------------------
-# 6. 그래프 구성
+# 5. 그래프 구성
 # -------------------------
 def build_langgraph_pipeline():
     workflow = StateGraph(AnalysisState)
 
-    # 노드 등록 (safe_node_wrapper는 이미 데코레이터로 적용됨)
-    workflow.add_node("text_type", text_type_node)
-    workflow.add_node("summary", summary_node)
-    workflow.add_node("genre", genre_node)
-    workflow.add_node("style", style_node)
-    workflow.add_node("evaluation", evaluation_node)
-    workflow.add_node("characters", character_node)
-    workflow.add_node("character_cards", character_card_node)
+    # 노드 등록
+    workflow.add_node("text_type", safe_node_wrapper(text_type_node))
+    workflow.add_node("summary", safe_node_wrapper(summary_node))
+    workflow.add_node("genre", safe_node_wrapper(genre_node))
+    workflow.add_node("evaluation", safe_node_wrapper(evaluation_node))
+    workflow.add_node("score_gate", score_gate_node)
+    workflow.add_node("style", safe_node_wrapper(style_node))
+    workflow.add_node("characters", safe_node_wrapper(character_node))
+    workflow.add_node("character_cards", safe_node_wrapper(character_card_node))
 
     # 시작 지점
     workflow.set_entry_point("text_type")
 
+    # ===== 1. 텍스트 타입 분기 =====
     workflow.add_conditional_edges(
         "text_type",
         route_by_text_type,
         {
-            "novel": "summary",       # 소설 원문 → 전체 분석
-            "planning": "genre",      # 시나리오/플롯 → 기획 분석만
-            "unknown": "summary",     # 애매하면 소설로 간주
+            "novel": "summary",     # 소설 원문
+            "planning": "genre",    # 시나리오/플롯
+            "unknown": "summary",
         }
     )
 
-    # ===== 소설 원문 경로 =====
+    # ===== 2. 공통 평가 흐름 =====
     workflow.add_edge("summary", "genre")
     workflow.add_edge("genre", "evaluation")
-    workflow.add_edge("evaluation", "style")
+
+    # 🔥 핵심: evaluation → score_gate
+    workflow.add_edge("evaluation", "score_gate")
+
+    # ===== 3. 점수 기반 분기 =====
+    workflow.add_conditional_edges(
+        "score_gate",
+        route_by_score,
+        {
+            "deep": "style",  # 70점 이상
+            "stop": END,     # 70점 미만
+        }
+    )
+
+    # ===== 4. 심화 분석 =====
     workflow.add_edge("style", "characters")
     workflow.add_edge("characters", "character_cards")
     workflow.add_edge("character_cards", END)
-
-    # ===== 시나리오/플롯 경로 =====
-    workflow.add_edge("evaluation", END)
 
     return workflow.compile()
 
 
 # -------------------------
-# 7. 외부 호출용 실행 함수
+# 6. 외부 호출용 실행 함수
 # -------------------------
 _langgraph_pipeline = build_langgraph_pipeline()
 
@@ -212,10 +214,12 @@ def run_langgraph_pipeline(text: str) -> dict:
     result = _langgraph_pipeline.invoke(
         {
             "text": text,
+            "text_type": None,
             "summary": None,
             "genre": None,
-            "style": None,
             "evaluation": None,
+            "score_gate": None,
+            "style": None,
             "characters": None,
             "character_cards": None,
             "errors": [],
@@ -225,7 +229,7 @@ def run_langgraph_pipeline(text: str) -> dict:
 
 
 # -------------------------
-# 8. 디버깅용 (선택사항)
+# 7. 디버깅용 (선택사항)
 # -------------------------
 if __name__ == "__main__":
     # 그래프 구조 확인
