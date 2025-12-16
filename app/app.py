@@ -84,20 +84,26 @@ def render_result(result: dict):
     st.markdown("---")
     st.subheader("🎭 장르 분석")
 
-    genre = result.get("genre") or result.get("genre_result") or {}
+    genre = result.get("genre") or {}
 
-    main = genre.get("main_genre") or genre.get("primary_genre")
-    sub = genre.get("sub_genre") or genre.get("secondary_genre")
-    confidence = genre.get("confidence") or genre.get("confidence_score")
+    main = genre.get("주_장르")
+    subs = genre.get("보조_장르") or []
+    keywords = genre.get("핵심_키워드") or []
+    confidence = genre.get("장르_분류_신뢰도")
 
     if main:
-        st.write(f"- **주 장르**: {format_value(main)}")
-    if sub:
-        st.write(f"- **보조 장르**: {format_value(sub)}")
-    if confidence is not None:
-        st.write(f"- **신뢰도**: {format_value(confidence)}")
+        st.write(f"- **주 장르**: {main}")
 
-    if not any([main, sub, confidence]):
+    if subs:
+        st.write(f"- **보조 장르**: {', '.join(subs)}")
+
+    if keywords:
+        st.write(f"- **핵심 키워드**: {', '.join(keywords)}")
+
+    if confidence is not None:
+        st.write(f"- **장르 분류 신뢰도**: {confidence}")
+
+    if not any([main, subs, keywords, confidence]):
         st.caption("장르 분석 결과가 없습니다.")
 
     # =========================
@@ -149,30 +155,26 @@ def render_result(result: dict):
     st.markdown("---")
     st.subheader("👤 캐릭터 카드")
 
-    cards = (
-        result.get("character_cards")
-        or result.get("character_card")
-        or result.get("character_card_result")
-        or []
-    )
+    cards = result.get("character_cards") or []
 
     if cards:
         for c in cards:
-            if not isinstance(c, dict):
-                continue
-
-            name = c.get("name") or c.get("character_name") or "이름 미상"
-            role = c.get("role") or c.get("importance")
+            name = c.get("name", "이름 미상")
+            role = c.get("role")
 
             st.markdown(f"### {name}" + (f" ({role})" if role else ""))
 
-            desc = (
-                c.get("description")
-                or c.get("summary")
-                or c.get("character_description")
-            )
-            if desc:
-                st.write(format_value(desc))
+            personality = c.get("personality_keywords") or []
+            if personality:
+                st.write(f"- **성격 키워드**: {', '.join(personality)}")
+
+            core_traits = c.get("core_traits")
+            if core_traits:
+                st.write(f"- **핵심 성향**: {core_traits}")
+
+            warning = c.get("warning_point")
+            if warning:
+                st.write(f"- **주의 포인트**: {warning}")
     else:
         st.caption("캐릭터 분석 결과가 없습니다.")
 
