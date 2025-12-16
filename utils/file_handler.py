@@ -6,7 +6,7 @@
 
 from pathlib import Path
 import docx
-import PyPDF2
+from pypdf import PdfReader
 
 MAX_CHARS = 30000
 
@@ -27,7 +27,7 @@ def load_from_file(file_path: str) -> str:
         content = "\n".join([p.text for p in doc.paragraphs])
 
     elif ext == ".pdf":
-        reader = PyPDF2.PdfReader(path)
+        reader = PdfReader(path)
         content = ""
         for page in reader.pages:
             content += page.extract_text() or ""
