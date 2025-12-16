@@ -241,8 +241,24 @@ if st.button("웹소설 종합 분석"):
     with st.spinner("LangGraph AI Agent가 분석 중입니다..."):
         result = run_langgraph_pipeline(text)
 
+    # text_type 먼저 확인
+    text_type = result.get("text_type")
+
+    if text_type and text_type.get("type") == "unknown":
+        # 이유 메시지 출력
+        st.warning(
+            text_type.get(
+                "message",
+                "분석할 수 없는 입력입니다."
+            )
+        )
+        # 아래 UI 전부 중단
+        st.stop()
+
+    # 정상 분석일 때만
     st.success("분석 완료")
 
     # 3. 분석 결과
     st.header("3. 분석 결과")
     render_result(result)
+

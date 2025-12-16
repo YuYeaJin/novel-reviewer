@@ -25,7 +25,8 @@ def analyze_text_type(text: str) -> Dict:
         return {
             "type": "unknown",
             "confidence": 0.1,
-            "reason": "텍스트 분량이 너무 짧아 형식 판별이 불가능함"
+            "reason": "LENGTH_TOO_SHORT",
+            "message": "원고 분량이 부족합니다. 200자 이상 입력해 주세요."
         }
 
     sentence_count = len(re.findall(r"[.!?]", text))
@@ -33,7 +34,8 @@ def analyze_text_type(text: str) -> Dict:
         return {
             "type": "unknown",
             "confidence": 0.1,
-            "reason": "문장 수가 부족하여 형식 판별이 어려움"
+            "reason": "NOT_ENOUGH_SENTENCE",
+            "message": "문장 수가 부족해 분석할 수 없습니다."
         }
 
     # LLM 기반 형식 판별
