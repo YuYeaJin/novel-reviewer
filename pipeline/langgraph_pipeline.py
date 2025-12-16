@@ -166,7 +166,7 @@ def build_langgraph_pipeline():
         {
             "novel": "summary",     # 소설 원문
             "planning": "genre",    # 시나리오/플롯
-            "unknown": "summary",
+            "unknown": END,
         }
     )
 

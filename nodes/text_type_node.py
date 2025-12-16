@@ -1,16 +1,42 @@
-# 입력된 텍스트 및 첨부된 파일의 내용이 '소설'의 원문인지 '시놉시스/플롯'인지 구분하는 노드
+# 입력된 텍스트 및 첨부된 파일의 내용이
+# '소설 원문 / 시나리오 / 플롯' 중 무엇인지 구분하는 노드
 
 from typing import Dict
 from utils.openai_client import get_client
 import json
+import re
 
 client = get_client()
+
+# Rule-based 기준값
+MIN_CHARS = 200
+MIN_SENTENCES = 3
+
 
 def analyze_text_type(text: str) -> Dict:
     """
     입력 텍스트가 소설 원문 / 시나리오 / 플롯 중 무엇인지 판단
     """
 
+    text = text.strip()
+
+    # Rule-based pre-filter
+    if len(text) < MIN_CHARS:
+        return {
+            "type": "unknown",
+            "confidence": 0.1,
+            "reason": "텍스트 분량이 너무 짧아 형식 판별이 불가능함"
+        }
+
+    sentence_count = len(re.findall(r"[.!?]", text))
+    if sentence_count < MIN_SENTENCES:
+        return {
+            "type": "unknown",
+            "confidence": 0.1,
+            "reason": "문장 수가 부족하여 형식 판별이 어려움"
+        }
+
+    # LLM 기반 형식 판별
     prompt = f"""
 당신은 글의 형식을 판별하는 분석가입니다.
 
